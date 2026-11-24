@@ -1,0 +1,23 @@
+{
+ "name": "Gerar EXE Windows",
+ "on": { "push": { "paths": ["ASHEN.zip"] }, "workflow_dispatch": {} },
+ "permissions": { "contents": "write" },
+ "jobs": {
+  "exe": {
+   "runs-on": "windows-latest",
+   "steps": [
+    { "uses": "actions/checkout@v4" },
+    { "name": "Extrair o jogo", "shell": "pwsh",
+      "run": "Expand-Archive -Path ASHEN.zip -DestinationPath build_src -Force\n$d = 'build_src/ASHEN/desktop'\nNew-Item -ItemType Directory -Force -Path \"$d/www\" | Out-Null\nCopy-Item -Recurse -Force build_src/ASHEN/index.html, build_src/ASHEN/manifest.json, build_src/ASHEN/styles, build_src/ASHEN/assets, build_src/ASHEN/src \"$d/www/\"" },
+    { "uses": "actions/setup-node@v4", "with": { "node-version": "20" } },
+    { "name": "Montar o EXE", "shell": "pwsh", "working-directory": "build_src/ASHEN/desktop",
+      "run": "npm install --no-audit --no-fund\nnpx electron-builder --win nsis portable --x64 --publish never\nCopy-Item dist/ASHEN-Instalador.exe $env:GITHUB_WORKSPACE/\nCopy-Item dist/ASHEN-Portatil.exe $env:GITHUB_WORKSPACE/" },
+    { "uses": "actions/upload-artifact@v4", "with": { "name": "ASHEN-windows", "path": "ASHEN-*.exe" } },
+    { "uses": "softprops/action-gh-release@v2",
+      "with": { "tag_name": "windows-${{ github.run_number }}", "name": "ASHEN para Windows #${{ github.run_number }}",
+                "files": "ASHEN-Instalador.exe\nASHEN-Portatil.exe", "make_latest": "false",
+                "body": "Instalador: cria atalho. Portátil: abre direto. Se o Windows avisar, clique em 'Mais informações' → 'Executar assim mesmo'. F11 = tela cheia." } }
+   ]
+  }
+ }
+}
