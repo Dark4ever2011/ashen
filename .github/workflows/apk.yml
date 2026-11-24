@@ -1,0 +1,62 @@
+{
+ "name": "Gerar APK Android",
+ "on": {
+  "push": {
+   "paths": [
+    "ASHEN.zip"
+   ]
+  },
+  "workflow_dispatch": {}
+ },
+ "permissions": {
+  "contents": "write"
+ },
+ "jobs": {
+  "apk": {
+   "runs-on": "ubuntu-latest",
+   "steps": [
+    {
+     "uses": "actions/checkout@v4"
+    },
+    {
+     "name": "Extrair o jogo dentro do projeto Android",
+     "run": "unzip -q ASHEN.zip -d build_src\ncd build_src/ASHEN\nmkdir -p android/app/src/main/assets/www\ncp -r index.html manifest.json styles assets src android/app/src/main/assets/www/"
+    },
+    {
+     "uses": "actions/setup-java@v4",
+     "with": {
+      "distribution": "temurin",
+      "java-version": "17"
+     }
+    },
+    {
+     "uses": "gradle/actions/setup-gradle@v4",
+     "with": {
+      "gradle-version": "8.7"
+     }
+    },
+    {
+     "name": "Compilar o APK",
+     "run": "cd build_src/ASHEN/android\ngradle assembleDebug --no-daemon --stacktrace\ncp app/build/outputs/apk/debug/app-debug.apk $GITHUB_WORKSPACE/ASHEN.apk"
+    },
+    {
+     "uses": "actions/upload-artifact@v4",
+     "with": {
+      "name": "ASHEN-apk",
+      "path": "ASHEN.apk"
+     }
+    },
+    {
+     "uses": "softprops/action-gh-release@v2",
+     "with": {
+      "tag_name": "apk-${{ github.run_number }}",
+      "name": "ASHEN APK #${{ github.run_number }}",
+      "files": "ASHEN.apk",
+      "make_latest": "true",
+      "body": "Baixe ASHEN.apk no celular e toque para instalar (permita instalar de fontes desconhecidas)."
+     }
+    }
+   ]
+  }
+ }
+}
